@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f1ea">
+  <meta name="description" content="简洁、精准的在线节拍器。支持拍号、重拍、音量调节与点击测速，适用于日常乐器练习。">
+  <title>拍点 · 在线节拍器</title>
+  <style>
+    :root {
+      --paper: #f4f1ea;
+      --surface: rgba(255, 255, 255, .68);
+      --ink: #19342e;
+      --muted: #71807a;
+      --line: rgba(25, 52, 46, .12);
+      --green: #1d5b4b;
+      --green-dark: #144537;
+      --lime: #d9ed9e;
+      --coral: #e8795b;
+      --shadow: 0 24px 70px rgba(36, 52, 43, .08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { min-height: 100%; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      min-height: 100dvh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(217, 237, 158, .48), transparent 28rem),
+        radial-gradient(circle at 90% 86%, rgba(232, 121, 91, .12), transparent 26rem),
+        var(--paper);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select { font: inherit; }
+    button, select, input[type="range"] { touch-action: manipulation; }
+    button { color: inherit; }
+    button:focus-visible, select:focus-visible, input:focus-visible {
+      outline: 3px solid rgba(232, 121, 91, .38);
+      outline-offset: 3px;
+    }
+
+    .page {
+      width: min(1080px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 30px 0 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      color: var(--lime);
+      background: var(--green);
+      box-shadow: 0 8px 20px rgba(29, 91, 75, .16);
+    }
+
+    .brand-name { margin: 0; font-size: 20px; font-weight: 750; letter-spacing: .08em; }
+    .brand-sub { margin: 3px 0 0; color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .22em; }
+
+    .local-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .35);
+      font-size: 12px;
+    }
+
+    .local-badge::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #5d9474;
+      box-shadow: 0 0 0 4px rgba(93, 148, 116, .1);
+    }
+
+    .intro { margin-bottom: 26px; }
+    .eyebrow { margin: 0 0 8px; color: var(--coral); font-size: 11px; font-weight: 800; letter-spacing: .22em; }
+    .intro h1 { margin: 0; font-size: clamp(27px, 4vw, 39px); font-weight: 720; letter-spacing: -.04em; }
+    .intro p { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(280px, .85fr);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .8);
+      border-radius: 30px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .player { padding: 32px 38px 30px; }
+    .settings {
+      padding: 30px;
+      border-left: 1px solid var(--line);
+      background: rgba(244, 241, 234, .5);
+    }
+
+    .player-top { display: flex; align-items: center; justify-content: space-between; }
+    .section-label { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .16em; }
+    .status { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #a6afa9; transition: .2s; }
+    .status.is-playing { color: var(--green); }
+    .status.is-playing .status-dot { background: var(--coral); box-shadow: 0 0 0 5px rgba(232, 121, 91, .12); }
+
+    .tempo-wrap { position: relative; display: grid; place-items: center; padding: 26px 0 20px; }
+    .tempo-glow {
+      position: absolute;
+      width: 215px;
+      height: 215px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(217, 237, 158, .65), rgba(217, 237, 158, 0) 68%);
+      opacity: .65;
+      transform: scale(.9);
+      transition: transform .16s ease-out, opacity .16s ease-out;
+    }
+
+    .tempo-wrap.pulse .tempo-glow { opacity: 1; transform: scale(1.14); transition-duration: .035s; }
+    .tempo { position: relative; display: flex; align-items: baseline; justify-content: center; gap: 10px; }
+    .tempo-value {
+      min-width: 2.3ch;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      font-size: clamp(78px, 11vw, 110px);
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -.075em;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .tempo-unit { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+    .tempo-caption { position: relative; margin: 12px 0 0; color: var(--muted); font-size: 12px; }
+
+    .tempo-control { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 16px; }
+    .round-btn {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .6);
+      cursor: pointer;
+      font-size: 23px;
+      transition: transform .15s, background .15s;
+    }
+    .round-btn:hover { background: white; transform: translateY(-1px); }
+    .round-btn:active { transform: translateY(1px); }
+
+    input[type="range"] {
+      width: 100%;
+      height: 5px;
+      margin: 0;
+      border-radius: 999px;
+      background: linear-gradient(to right, var(--green) 0%, var(--green) var(--range-progress, 42.86%), rgba(25, 52, 46, .13) var(--range-progress, 42.86%), rgba(25, 52, 46, .13) 100%);
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      width: 19px;
+      height: 19px;
+      border: 5px solid white;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 1px 7px rgba(25, 52, 46, .25);
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+      border: 5px solid white;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 1px 7px rgba(25, 52, 46, .25);
+    }
+
+    .range-labels { display: flex; justify-content: space-between; margin: 10px 58px 0; color: #95a09a; font-size: 10px; }
+    .beat-dots { display: flex; align-items: center; justify-content: center; gap: 11px; min-height: 28px; margin: 25px 0 24px; }
+    .beat-dot {
+      width: 10px;
+      height: 10px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: #d4d8d1;
+      box-shadow: 0 0 0 0 rgba(29, 91, 75, 0);
+      transition: transform .09s, background .09s, box-shadow .09s;
+    }
+    .beat-dot.accent { background: #b9c3b7; }
+    .beat-dot.active { background: var(--green); transform: scale(1.5); box-shadow: 0 0 0 6px rgba(29, 91, 75, .09); }
+    .beat-dot.active.accent { background: var(--coral); box-shadow: 0 0 0 6px rgba(232, 121, 91, .1); }
+
+    .actions { display: grid; grid-template-columns: 1fr 116px; gap: 12px; }
+    .primary-btn, .tap-btn {
+      min-height: 56px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .15s, background .15s, box-shadow .15s;
+    }
+    .primary-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 0;
+      color: white;
+      background: var(--green);
+      box-shadow: 0 10px 24px rgba(29, 91, 75, .2);
+    }
+    .primary-btn:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .primary-btn.is-playing { color: var(--ink); background: var(--lime); box-shadow: none; }
+    .tap-btn { border: 1px solid var(--line); background: transparent; }
+    .tap-btn:hover { background: rgba(255, 255, 255, .65); }
+    .tap-btn:active, .primary-btn:active { transform: translateY(1px); }
+    .tap-btn small { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; font-weight: 500; }
+    .button-icon { width: 16px; height: 16px; fill: currentColor; }
+
+    .setting-block + .setting-block { margin-top: 26px; padding-top: 24px; border-top: 1px solid var(--line); }
+    .setting-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+    .setting-title { margin: 0; font-size: 13px; font-weight: 700; }
+    .setting-value { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .signature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+    .signature-btn {
+      min-height: 39px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, .4);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+    }
+    .signature-btn:hover { background: white; }
+    .signature-btn.selected { border-color: var(--green); color: white; background: var(--green); }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: 15px;
+      width: 7px;
+      height: 7px;
+      border-right: 1.5px solid var(--muted);
+      border-bottom: 1.5px solid var(--muted);
+      pointer-events: none;
+      transform: translateY(-70%) rotate(45deg);
+    }
+    select {
+      width: 100%;
+      height: 44px;
+      padding: 0 38px 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, .52);
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .toggle-copy strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .toggle-copy span { color: var(--muted); font-size: 11px; }
+    .switch { position: relative; flex: 0 0 auto; width: 43px; height: 25px; }
+    .switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 99px;
+      background: #c7cdc6;
+      cursor: pointer;
+      transition: .2s;
+    }
+    .switch-track::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: white;
+      box-shadow: 0 2px 5px rgba(25, 52, 46, .18);
+      transition: .2s;
+    }
+    .switch input:checked + .switch-track { background: var(--green); }
+    .switch input:checked + .switch-track::after { transform: translateX(18px); }
+    .switch input:focus-visible + .switch-track { outline: 3px solid rgba(232, 121, 91, .38); outline-offset: 3px; }
+
+    .volume-row { display: grid; grid-template-columns: 18px 1fr; align-items: center; gap: 12px; }
+    .volume-row svg { width: 18px; color: var(--muted); }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 4px 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .shortcuts { display: flex; gap: 18px; }
+    .shortcut { display: flex; align-items: center; gap: 6px; }
+    kbd { padding: 3px 7px; border: 1px solid var(--line); border-radius: 5px; background: rgba(255, 255, 255, .5); font: inherit; font-size: 9px; }
+    .footer-note { margin: 0; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(24px, env(safe-area-inset-bottom));
+      z-index: 10;
+      padding: 10px 16px;
+      border-radius: 999px;
+      color: white;
+      background: rgba(25, 52, 46, .92);
+      box-shadow: 0 8px 25px rgba(25, 52, 46, .18);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 10px);
+      transition: .2s;
+      font-size: 12px;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 780px) {
+      .page { width: min(620px, calc(100% - 32px)); padding-top: 22px; }
+      .topbar { margin-bottom: 24px; }
+      .intro { margin-bottom: 20px; }
+      .workspace { grid-template-columns: 1fr; border-radius: 24px; }
+      .player { padding: 25px 26px; }
+      .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 25px 26px; border-top: 1px solid var(--line); border-left: 0; }
+      .setting-block + .setting-block { margin: 0; padding: 0; border: 0; }
+      .tempo-wrap { padding: 22px 0 18px; }
+      .tempo-value { font-size: 88px; }
+      .footer-note { display: none; }
+      .footer { justify-content: center; }
+    }
+
+    @media (max-width: 480px) {
+      .page { width: calc(100% - 24px); padding: 16px 0 20px; }
+      .brand-mark { width: 38px; height: 38px; border-radius: 12px; }
+      .local-badge { padding: 7px 10px; font-size: 10px; }
+      .intro h1 { font-size: 27px; }
+      .intro p { font-size: 12px; }
+      .player { padding: 22px 20px; }
+      .settings { grid-template-columns: 1fr; gap: 22px; padding: 23px 20px; }
+      .tempo-value { font-size: 82px; }
+      .tempo-glow { width: 190px; height: 190px; }
+      .tempo-control { grid-template-columns: 40px 1fr 40px; gap: 12px; }
+      .range-labels { margin-right: 52px; margin-left: 52px; }
+      .beat-dots { margin: 22px 0 20px; }
+      .actions { grid-template-columns: 1fr 102px; }
+      .primary-btn, .tap-btn { min-height: 54px; }
+      .shortcuts { gap: 12px; }
+      .shortcut:last-child { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3h8l3 18H5L8 3Z"/><path d="m12 17 4-11"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <div><p class="brand-name">拍点</p><p class="brand-sub">METRONOME</p></div>
+      </div>
+      <div class="local-badge">本地发声 · 精准计时</div>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">FIND YOUR INNER RHYTHM</p>
+      <h1 id="page-title">稳住节拍，尽兴练习。</h1>
+      <p>调好速度，按下开始，把每一次练习交给稳定的节奏。</p>
+    </section>
+
+    <main class="workspace">
+      <section class="player" aria-label="节拍器播放器">
+        <div class="player-top">
+          <span class="section-label">TEMPO</span>
+          <div class="status" id="status"><span class="status-dot"></span><span id="statusText">准备就绪</span></div>
+        </div>
+
+        <div class="tempo-wrap" id="tempoWrap">
+          <div class="tempo-glow" aria-hidden="true"></div>
+          <div>
+            <div class="tempo"><output class="tempo-value" id="bpmValue" for="bpmRange">120</output><span class="tempo-unit">BPM</span></div>
+            <p class="tempo-caption" id="tempoCaption">Moderato · 中板</p>
+          </div>
+        </div>
+
+        <div class="tempo-control">
+          <button class="round-btn" id="decreaseBpm" type="button" aria-label="每分钟节拍数减一">−</button>
+          <input id="bpmRange" type="range" min="30" max="240" value="120" step="1" aria-label="每分钟节拍数">
+          <button class="round-btn" id="increaseBpm" type="button" aria-label="每分钟节拍数加一">+</button>
+        </div>
+        <div class="range-labels" aria-hidden="true"><span>30</span><span>240</span></div>
+
+        <div class="beat-dots" id="beatDots" aria-label="小节节拍指示"></div>
+
+        <div class="actions">
+          <button class="primary-btn" id="playButton" type="button" aria-label="开始节拍器">
+            <svg class="button-icon" id="playIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.8c0-.8.9-1.3 1.6-.9l7.1 5.2c.6.4.6 1.4 0 1.8l-7.1 5.2c-.7.5-1.6 0-1.6-.9V2.8Z"/></svg>
+            <span id="playText">开始练习</span>
+          </button>
+          <button class="tap-btn" id="tapButton" type="button">点击测速<small id="tapHint">连续点击节拍</small></button>
+        </div>
+      </section>
+
+      <aside class="settings" aria-label="节拍器设置">
+        <div class="setting-block">
+          <div class="setting-heading"><h2 class="setting-title">拍号</h2><span class="setting-value" id="barLength">每小节 4 拍</span></div>
+          <div class="signature-grid" id="signatureGrid">
+            <button class="signature-btn" type="button" data-beats="2">2 / 4</button>
+            <button class="signature-btn" type="button" data-beats="3">3 / 4</button>
+            <button class="signature-btn selected" type="button" data-beats="4" aria-pressed="true">4 / 4</button>
+            <button class="signature-btn" type="button" data-beats="5">5 / 4</button>
+            <button class="signature-btn" type="button" data-beats="6">6 / 8</button>
+            <button class="signature-btn" type="button" data-beats="7">7 / 8</button>
+            <button class="signature-btn" type="button" data-beats="9">9 / 8</button>
+            <button class="signature-btn" type="button" data-beats="12">12 / 8</button>
+          </div>
+        </div>
+
+        <div class="setting-block">
+          <div class="setting-heading"><h2 class="setting-title"><label for="soundSelect">节拍音色</label></h2></div>
+          <div class="select-wrap">
+            <select id="soundSelect">
+              <option value="wood">木质 · 清脆自然</option>
+              <option value="digital">电子 · 清晰有力</option>
+              <option value="soft">柔和 · 温暖轻缓</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="setting-block">
+          <div class="toggle-row">
+            <div class="toggle-copy"><strong>首拍重音</strong><span>突出每一小节的第一拍</span></div>
+            <label class="switch">
+              <input id="accentToggle" type="checkbox" checked aria-label="首拍重音">
+              <span class="switch-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-block">
+          <div class="setting-heading"><h2 class="setting-title"><label for="volumeRange">音量</label></h2><output class="setting-value" id="volumeValue" for="volumeRange">70%</output></div>
+          <div class="volume-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/></svg>
+            <input id="volumeRange" type="range" min="0" max="100" value="70" aria-label="音量">
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footer">
+      <div class="shortcuts" aria-label="键盘快捷键">
+        <span class="shortcut"><kbd>SPACE</kbd>开始 / 暂停</span>
+        <span class="shortcut"><kbd>T</kbd>点击测速</span>
+        <span class="shortcut"><kbd>↑ ↓</kbd>微调速度</span>
+      </div>
+      <p class="footer-note">声音在你的设备上实时生成，无需加载音频。</p>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const $ = (id) => document.getElementById(id);
+      const ui = {
+        bpmValue: $('bpmValue'), bpmRange: $('bpmRange'), tempoCaption: $('tempoCaption'),
+        tempoWrap: $('tempoWrap'), beatDots: $('beatDots'), playButton: $('playButton'),
+        playIcon: $('playIcon'), playText: $('playText'), status: $('status'), statusText: $('statusText'),
+        tapButton: $('tapButton'), tapHint: $('tapHint'), signatureGrid: $('signatureGrid'),
+        barLength: $('barLength'), soundSelect: $('soundSelect'), accentToggle: $('accentToggle'),
+        volumeRange: $('volumeRange'), volumeValue: $('volumeValue'), toast: $('toast')
+      };
+
+      const state = { bpm: 120, beats: 4, playing: false };
+      let audioContext = null;
+      let schedulerTimer = null;
+      let nextNoteTime = 0;
+      let currentBeat = 0;
+      let animationFrame = null;
+      let visualQueue = [];
+      let tapTimes = [];
+      let toastTimer = null;
+      let wakeLock = null;
+      const scheduleAheadTime = 0.12;
+      const schedulerInterval = 25;
+
+      const playPath = 'M4 2.8c0-.8.9-1.3 1.6-.9l7.1 5.2c.6.4.6 1.4 0 1.8l-7.1 5.2c-.7.5-1.6 0-1.6-.9V2.8Z';
+      const pausePath = 'M4 3.5c0-.8.2-1.5 1-1.5h2c.8 0 1 .7 1 1.5v9c0 .8-.2 1.5-1 1.5H5c-.8 0-1-.7-1-1.5v-9Zm5 0c0-.8.2-1.5 1-1.5h2c.8 0 1 .7 1 1.5v9c0 .8-.2 1.5-1 1.5h-2c-.8 0-1-.7-1-1.5v-9Z';
+
+      function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+
+      function tempoName(bpm) {
+        if (bpm < 40) return 'Grave · 极慢板';
+        if (bpm < 60) return 'Largo · 广板';
+        if (bpm < 76) return 'Adagio · 柔板';
+        if (bpm < 108) return 'Andante · 行板';
+        if (bpm < 120) return 'Moderato · 中板';
+        if (bpm < 168) return 'Allegro · 快板';
+        if (bpm < 200) return 'Presto · 急板';
+        return 'Prestissimo · 最急板';
+      }
+
+      function setRangeProgress(input) {
+        const progress = ((Number(input.value) - Number(input.min)) / (Number(input.max) - Number(input.min))) * 100;
+        input.style.setProperty('--range-progress', `${progress}%`);
+      }
+
+      function setBpm(value, announce = false) {
+        state.bpm = clamp(Math.round(Number(value) || 120), 30, 240);
+        ui.bpmValue.value = state.bpm;
+        ui.bpmValue.textContent = state.bpm;
+        ui.bpmRange.value = state.bpm;
+        ui.tempoCaption.textContent = tempoName(state.bpm);
+        setRangeProgress(ui.bpmRange);
+        if (announce) showToast(`速度已设为 ${state.bpm} BPM`);
+      }
+
+      function buildBeatDots() {
+        ui.beatDots.replaceChildren();
+        for (let i = 0; i < state.beats; i++) {
+          const dot = document.createElement('span');
+          dot.className = `beat-dot${i === 0 ? ' accent' : ''}`;
+          dot.setAttribute('aria-hidden', 'true');
+          ui.beatDots.appendChild(dot);
+        }
+        ui.beatDots.setAttribute('aria-label', `每小节 ${state.beats} 拍`);
+      }
+
+      function setSignature(beats) {
+        state.beats = beats;
+        ui.barLength.textContent = `每小节 ${beats} 拍`;
+        ui.signatureGrid.querySelectorAll('button').forEach((button) => {
+          const selected = Number(button.dataset.beats) === beats;
+          button.classList.toggle('selected', selected);
+          button.setAttribute('aria-pressed', String(selected));
+        });
+        buildBeatDots();
+        if (state.playing) {
+          currentBeat = 0;
+          nextNoteTime = audioContext.currentTime + 0.05;
+          visualQueue = [];
+          clearBeatVisual();
+        }
+      }
+
+      function makeClick(time, beat) {
+        const accent = state.accentToggle.checked && beat === 0;
+        const volume = Number(ui.volumeRange.value) / 100;
+        if (volume === 0) return;
+
+        const master = audioContext.createGain();
+        master.gain.setValueAtTime(0.0001, time);
+        master.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume * 0.65), time + 0.002);
+        master.gain.exponentialRampToValueAtTime(0.0001, time + 0.075);
+        master.connect(audioContext.destination);
+
+        const oscillator = audioContext.createOscillator();
+        const sound = ui.soundSelect.value;
+        let frequency = accent ? 1500 : 1050;
+        let duration = 0.065;
+
+        if (sound === 'digital') {
+          oscillator.type = 'square';
+          frequency = accent ? 1320 : 880;
+          duration = 0.045;
+        } else if (sound === 'soft') {
+          oscillator.type = 'sine';
+          frequency = accent ? 780 : 580;
+          duration = 0.09;
+        } else {
+          oscillator.type = 'triangle';
+        }
+
+        oscillator.frequency.setValueAtTime(frequency, time);
+        oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.72, time + duration);
+        oscillator.connect(master);
+        oscillator.start(time);
+        oscillator.stop(time + duration + 0.01);
+        oscillator.onended = () => { oscillator.disconnect(); master.disconnect(); };
+      }
+
+      function scheduler() {
+        while (nextNoteTime < audioContext.currentTime + scheduleAheadTime) {
+          makeClick(nextNoteTime, currentBeat);
+          visualQueue.push({ beat: currentBeat, time: nextNoteTime });
+          nextNoteTime += 60 / state.bpm;
+          currentBeat = (currentBeat + 1) % state.beats;
+        }
+      }
+
+      function clearBeatVisual() {
+        ui.beatDots.querySelectorAll('.beat-dot').forEach((dot) => dot.classList.remove('active'));
+        ui.tempoWrap.classList.remove('pulse');
+      }
+
+      function drawVisuals() {
+        if (!state.playing || !audioContext) return;
+        while (visualQueue.length && visualQueue[0].time <= audioContext.currentTime) {
+          const { beat } = visualQueue.shift();
+          ui.beatDots.querySelectorAll('.beat-dot').forEach((dot, index) => dot.classList.toggle('active', index === beat));
+          ui.tempoWrap.classList.remove('pulse');
+          void ui.tempoWrap.offsetWidth;
+          ui.tempoWrap.classList.add('pulse');
+          window.setTimeout(() => ui.tempoWrap.classList.remove('pulse'), Math.min(130, 30000 / state.bpm));
+        }
+        animationFrame = requestAnimationFrame(drawVisuals);
+      }
+
+      async function requestWakeLock() {
+        if (!('wakeLock' in navigator)) return;
+        try { wakeLock = await navigator.wakeLock.request('screen'); } catch (_) { wakeLock = null; }
+      }
+
+      async function start() {
+        try {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) { showToast('当前浏览器不支持音频播放，请更换浏览器'); return; }
+          if (!audioContext) audioContext = new AudioContextClass({ latencyHint: 'interactive' });
+          if (audioContext.state !== 'running') await audioContext.resume();
+
+          state.playing = true;
+          currentBeat = 0;
+          nextNoteTime = audioContext.currentTime + 0.06;
+          visualQueue = [];
+          scheduler();
+          schedulerTimer = window.setInterval(scheduler, schedulerInterval);
+          animationFrame = requestAnimationFrame(drawVisuals);
+          updatePlaybackUI();
+          requestWakeLock();
+        } catch (_) {
+          state.playing = false;
+          showToast('音频启动失败，请再次点击开始');
+        }
+      }
+
+      function stop() {
+        state.playing = false;
+        window.clearInterval(schedulerTimer);
+        cancelAnimationFrame(animationFrame);
+        schedulerTimer = null;
+        visualQueue = [];
+        clearBeatVisual();
+        updatePlaybackUI();
+        if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+      }
+
+      function togglePlayback() { state.playing ? stop() : start(); }
+
+      function updatePlaybackUI() {
+        ui.playButton.classList.toggle('is-playing', state.playing);
+        ui.playText.textContent = state.playing ? '暂停' : '开始练习';
+        ui.playButton.setAttribute('aria-label', state.playing ? '暂停节拍器' : '开始节拍器');
+        ui.playIcon.querySelector('path').setAttribute('d', state.playing ? pausePath : playPath);
+        ui.status.classList.toggle('is-playing', state.playing);
+        ui.statusText.textContent = state.playing ? '节拍进行中' : '准备就绪';
+      }
+
+      function tapTempo() {
+        const now = performance.now();
+        if (tapTimes.length && now - tapTimes[tapTimes.length - 1] > 2000) tapTimes = [];
+        tapTimes.push(now);
+        tapTimes = tapTimes.slice(-5);
+
+        if (tapTimes.length < 2) {
+          ui.tapHint.textContent = '再点一次';
+          return;
+        }
+
+        let total = 0;
+        for (let i = 1; i < tapTimes.length; i++) total += tapTimes[i] - tapTimes[i - 1];
+        const average = total / (tapTimes.length - 1);
+        setBpm(60000 / average);
+        ui.tapHint.textContent = `${state.bpm} BPM · 继续点击`;
+      }
+
+      function showToast(message) {
+        window.clearTimeout(toastTimer);
+        ui.toast.textContent = message;
+        ui.toast.classList.add('show');
+        toastTimer = window.setTimeout(() => ui.toast.classList.remove('show'), 1800);
+      }
+
+      ui.playButton.addEventListener('click', togglePlayback);
+      ui.bpmRange.addEventListener('input', (event) => setBpm(event.target.value));
+      $('decreaseBpm').addEventListener('click', () => setBpm(state.bpm - 1));
+      $('increaseBpm').addEventListener('click', () => setBpm(state.bpm + 1));
+      ui.tapButton.addEventListener('click', tapTempo);
+      ui.signatureGrid.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-beats]');
+        if (button) setSignature(Number(button.dataset.beats));
+      });
+      ui.volumeRange.addEventListener('input', () => {
+        ui.volumeValue.value = `${ui.volumeRange.value}%`;
+        ui.volumeValue.textContent = `${ui.volumeRange.value}%`;
+        setRangeProgress(ui.volumeRange);
+      });
+
+      document.addEventListener('keydown', (event) => {
+        const interactive = event.target.closest('input, select, button, textarea, a');
+        if (event.code === 'Space' && !interactive) {
+          event.preventDefault();
+          togglePlayback();
+        } else if (event.key.toLowerCase() === 't' && !interactive) {
+          event.preventDefault();
+          tapTempo();
+        } else if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !interactive) {
+          event.preventDefault();
+          setBpm(state.bpm + (event.key === 'ArrowUp' ? 1 : -1));
+        }
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && state.playing && audioContext) {
+          nextNoteTime = Math.max(nextNoteTime, audioContext.currentTime + 0.03);
+          if (audioContext.state !== 'running') audioContext.resume().catch(() => {});
+        }
+      });
+
+      setBpm(120);
+      setRangeProgress(ui.volumeRange);
+      buildBeatDots();
+    })();
+  </script>
+</body>
+</html>
