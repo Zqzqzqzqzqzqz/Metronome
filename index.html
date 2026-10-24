@@ -599,7 +599,7 @@
       }
 
       function makeClick(time, beat) {
-        const accent = state.accentToggle.checked && beat === 0;
+        const accent = ui.accentToggle.checked && beat === 0;
         const volume = Number(ui.volumeRange.value) / 100;
         if (volume === 0) return;
 
@@ -682,9 +682,10 @@
           animationFrame = requestAnimationFrame(drawVisuals);
           updatePlaybackUI();
           requestWakeLock();
-        } catch (_) {
-          state.playing = false;
-          showToast('音频启动失败，请再次点击开始');
+        } catch (error) {
+          stop();
+          console.error('Metronome audio startup failed:', error);
+          showToast('音频启动失败，请刷新页面后再试');
         }
       }
 
