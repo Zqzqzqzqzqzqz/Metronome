@@ -200,20 +200,27 @@
     }
 
     .range-labels { display: flex; justify-content: space-between; margin: 10px 58px 0; color: #95a09a; font-size: 10px; }
-    .beat-dots { display: flex; align-items: center; justify-content: center; gap: 11px; min-height: 28px; margin: 25px 0 24px; }
+    .beat-dots { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 38px; margin: 22px 0 20px; }
     .beat-dot {
-      width: 10px;
-      height: 10px;
+      width: 16px;
+      height: 16px;
       padding: 0;
       border: 0;
       border-radius: 50%;
-      background: #d4d8d1;
-      box-shadow: 0 0 0 0 rgba(29, 91, 75, 0);
+      background: #cdd3ca;
+      box-shadow: inset 0 1px 2px rgba(25, 52, 46, .08);
       transition: transform .09s, background .09s, box-shadow .09s;
     }
-    .beat-dot.accent { background: #b9c3b7; }
-    .beat-dot.active { background: var(--green); transform: scale(1.5); box-shadow: 0 0 0 6px rgba(29, 91, 75, .09); }
-    .beat-dot.active.accent { background: var(--coral); box-shadow: 0 0 0 6px rgba(232, 121, 91, .1); }
+    .beat-dot.accent { background: #aebbae; }
+    .beat-dot.active {
+      background: #2f7d65;
+      transform: scale(1.35);
+      box-shadow: 0 0 0 7px rgba(47, 125, 101, .13), 0 0 22px rgba(47, 125, 101, .48);
+    }
+    .beat-dot.active.accent {
+      background: var(--coral);
+      box-shadow: 0 0 0 7px rgba(232, 121, 91, .15), 0 0 24px rgba(232, 121, 91, .58);
+    }
 
     .actions { display: grid; grid-template-columns: 1fr 116px; gap: 12px; }
     .primary-btn, .tap-btn {
@@ -377,7 +384,10 @@
       .tempo-glow { width: 190px; height: 190px; }
       .tempo-control { grid-template-columns: 40px 1fr 40px; gap: 12px; }
       .range-labels { margin-right: 52px; margin-left: 52px; }
-      .beat-dots { margin: 22px 0 20px; }
+      .beat-dots { gap: 6px; min-height: 34px; margin: 20px 0 18px; }
+      .beat-dot { width: 12px; height: 12px; }
+      .beat-dot.active { box-shadow: 0 0 0 5px rgba(47, 125, 101, .13), 0 0 18px rgba(47, 125, 101, .48); }
+      .beat-dot.active.accent { box-shadow: 0 0 0 5px rgba(232, 121, 91, .15), 0 0 20px rgba(232, 121, 91, .58); }
       .actions { grid-template-columns: 1fr 102px; }
       .primary-btn, .tap-btn { min-height: 54px; }
       .shortcuts { gap: 12px; }
