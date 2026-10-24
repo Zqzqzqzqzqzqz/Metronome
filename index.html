@@ -143,7 +143,7 @@
     .tempo-value {
       min-width: 2.3ch;
       font-family: "Avenir Next", "Segoe UI", sans-serif;
-      font-size: clamp(78px, 11vw, 110px);
+      font-size: clamp(64px, 9vw, 88px);
       font-weight: 600;
       line-height: 1;
       letter-spacing: -.075em;
@@ -200,13 +200,13 @@
     }
 
     .range-labels { display: flex; justify-content: space-between; margin: 10px 58px 0; color: #95a09a; font-size: 10px; }
-    .beat-dots { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 38px; margin: 22px 0 20px; }
+    .beat-dots { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; margin: 20px 0 18px; }
     .beat-dot {
-      width: 16px;
-      height: 16px;
+      width: 30px;
+      height: 14px;
       padding: 0;
       border: 0;
-      border-radius: 50%;
+      border-radius: 4px;
       background: #cdd3ca;
       box-shadow: inset 0 1px 2px rgba(25, 52, 46, .08);
       transition: transform .09s, background .09s, box-shadow .09s;
@@ -214,12 +214,12 @@
     .beat-dot.accent { background: #aebbae; }
     .beat-dot.active {
       background: #2f7d65;
-      transform: scale(1.35);
-      box-shadow: 0 0 0 7px rgba(47, 125, 101, .13), 0 0 22px rgba(47, 125, 101, .48);
+      transform: translateY(-2px) scale(1.08);
+      box-shadow: 0 0 0 4px rgba(47, 125, 101, .13), 0 4px 20px rgba(47, 125, 101, .55);
     }
     .beat-dot.active.accent {
       background: var(--coral);
-      box-shadow: 0 0 0 7px rgba(232, 121, 91, .15), 0 0 24px rgba(232, 121, 91, .58);
+      box-shadow: 0 0 0 4px rgba(232, 121, 91, .15), 0 4px 22px rgba(232, 121, 91, .65);
     }
 
     .actions { display: grid; grid-template-columns: 1fr 116px; gap: 12px; }
@@ -367,7 +367,9 @@
       .settings { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 25px 26px; border-top: 1px solid var(--line); border-left: 0; }
       .setting-block + .setting-block { margin: 0; padding: 0; border: 0; }
       .tempo-wrap { padding: 22px 0 18px; }
-      .tempo-value { font-size: 88px; }
+      .tempo-value { font-size: 74px; }
+      .beat-dots { gap: 7px; }
+      .beat-dot { width: 22px; height: 13px; }
       .footer-note { display: none; }
       .footer { justify-content: center; }
     }
@@ -380,14 +382,14 @@
       .intro p { font-size: 12px; }
       .player { padding: 22px 20px; }
       .settings { grid-template-columns: 1fr; gap: 22px; padding: 23px 20px; }
-      .tempo-value { font-size: 82px; }
-      .tempo-glow { width: 190px; height: 190px; }
+      .tempo-value { font-size: 68px; }
+      .tempo-glow { width: 175px; height: 175px; }
       .tempo-control { grid-template-columns: 40px 1fr 40px; gap: 12px; }
       .range-labels { margin-right: 52px; margin-left: 52px; }
-      .beat-dots { gap: 6px; min-height: 34px; margin: 20px 0 18px; }
-      .beat-dot { width: 12px; height: 12px; }
-      .beat-dot.active { box-shadow: 0 0 0 5px rgba(47, 125, 101, .13), 0 0 18px rgba(47, 125, 101, .48); }
-      .beat-dot.active.accent { box-shadow: 0 0 0 5px rgba(232, 121, 91, .15), 0 0 20px rgba(232, 121, 91, .58); }
+      .beat-dots { gap: 4px; min-height: 38px; margin: 18px 0 16px; }
+      .beat-dot { width: 16px; height: 12px; border-radius: 3px; }
+      .beat-dot.active { box-shadow: 0 0 0 3px rgba(47, 125, 101, .13), 0 3px 16px rgba(47, 125, 101, .55); }
+      .beat-dot.active.accent { box-shadow: 0 0 0 3px rgba(232, 121, 91, .15), 0 3px 18px rgba(232, 121, 91, .65); }
       .actions { grid-template-columns: 1fr 102px; }
       .primary-btn, .tap-btn { min-height: 54px; }
       .shortcuts { gap: 12px; }
